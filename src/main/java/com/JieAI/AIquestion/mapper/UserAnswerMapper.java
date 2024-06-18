@@ -1,6 +1,6 @@
 package com.JieAI.AIquestion.mapper;
 
-import generator.domain.UserAnswer;
+import com.JieAI.AIquestion.model.entity.UserAnswer;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

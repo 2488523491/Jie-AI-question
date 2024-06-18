@@ -1,6 +1,6 @@
 package com.JieAI.AIquestion.service;
 
-import generator.domain.Question;
+import com.JieAI.AIquestion.model.entity.Question;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

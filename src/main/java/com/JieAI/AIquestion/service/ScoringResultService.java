@@ -1,6 +1,7 @@
 package com.JieAI.AIquestion.service;
 
-import generator.domain.ScoringResult;
+
+import com.JieAI.AIquestion.model.entity.ScoringResult;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

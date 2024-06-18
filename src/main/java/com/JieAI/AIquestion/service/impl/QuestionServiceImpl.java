@@ -1,9 +1,9 @@
 package com.JieAI.AIquestion.service.impl;
 
+import com.JieAI.AIquestion.mapper.QuestionMapper;
+import com.JieAI.AIquestion.model.entity.Question;
+import com.JieAI.AIquestion.service.QuestionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import generator.domain.Question;
-import generator.service.QuestionService;
-import generator.mapper.QuestionMapper;
 import org.springframework.stereotype.Service;
 
 /**
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 */
 @Service
 public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question>
-    implements QuestionService{
+    implements QuestionService {
 
 }
 

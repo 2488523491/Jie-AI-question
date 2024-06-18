@@ -2,6 +2,10 @@ package com.JieAI.AIquestion.model.entity;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 
 /**
@@ -13,6 +17,7 @@ public class UserAnswer implements Serializable {
     /**
      * 
      */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -78,6 +83,7 @@ public class UserAnswer implements Serializable {
     /**
      * 是否删除
      */
+    @TableLogic
     private Integer isDelete;
 
     private static final long serialVersionUID = 1L;
