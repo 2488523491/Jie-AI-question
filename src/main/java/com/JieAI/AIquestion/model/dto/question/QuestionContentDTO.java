@@ -10,6 +10,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QuestionContentDTO {
+
+
     /**
      * 题目标题
      */
@@ -38,9 +40,9 @@ public class QuestionContentDTO {
          */
         private int score;
 
-        private String Value;
+        private String value;
 
-        private String Key;
+        private String key;
 
     }
 }

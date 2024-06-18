@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 题目接口
@@ -52,7 +53,7 @@ public class QuestionController {
         //  在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionAddRequest, question);
-        QuestionContentDTO questionContentDTO = questionAddRequest.getQuestionContent();
+    List<QuestionContentDTO> questionContentDTO = questionAddRequest.getQuestionContent();
         question.setQuestionContent(JSONUtil.toJsonStr(questionContentDTO));
         // 数据校验
         questionService.validQuestion(question, true);
@@ -109,7 +110,7 @@ public class QuestionController {
         //  在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionUpdateRequest, question);
-        QuestionContentDTO questionContentDTO = questionUpdateRequest.getQuestionContent();
+        List<QuestionContentDTO> questionContentDTO = questionUpdateRequest.getQuestionContent();
         question.setQuestionContent(JSONUtil.toJsonStr(questionContentDTO));
         // 数据校验
         questionService.validQuestion(question, false);
@@ -217,7 +218,7 @@ public class QuestionController {
         //  在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionEditRequest, question);
-        QuestionContentDTO questionContentDTO = questionEditRequest.getQuestionContent();
+        List<QuestionContentDTO> questionContentDTO = questionEditRequest.getQuestionContent();
         question.setQuestionContent(JSONUtil.toJsonStr(questionContentDTO));
         // 数据校验
         questionService.validQuestion(question, false);

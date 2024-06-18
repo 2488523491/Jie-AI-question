@@ -52,6 +52,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     public void validApp(App app, boolean add) {
         ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR);
         //  从对象中取值
+        System.out.println(app);
         Long id = app.getId();
         String appName = app.getAppName();
         String appDesc = app.getAppDesc();
@@ -64,8 +65,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             ThrowUtils.throwIf(StringUtils.isBlank(appName), ErrorCode.PARAMS_ERROR, "应用名不能为空");
             ThrowUtils.throwIf(StringUtils.isBlank(appDesc), ErrorCode.PARAMS_ERROR, "应用描述不能为空");
             ThrowUtils.throwIf(ObjectUtils.isEmpty(appType), ErrorCode.PARAMS_ERROR, "应用类型不能为空");
-            ReviewStatusEnum reviewStatusEnum = ReviewStatusEnum.getEnumByValue(reviewStatus);
-            ThrowUtils.throwIf(ObjectUtils.isEmpty(reviewStatusEnum), ErrorCode.PARAMS_ERROR, "审核状态不能为空");
             AppTypeEnum appTypeEnum = AppTypeEnum.getEnumByValue(appType);
             ThrowUtils.throwIf(ObjectUtils.isEmpty(appTypeEnum), ErrorCode.PARAMS_ERROR, "非法应用类别");
             AppScoreStrategyEnum appScoreStrategyEnum = AppScoreStrategyEnum.getEnumByValue(scoringStrategy);
@@ -74,7 +73,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 修改数据时，有参数则校验
         // 补充校验规则
         if (StringUtils.isNotBlank(appName)) {
-            ThrowUtils.throwIf(appName.length() < 80, ErrorCode.PARAMS_ERROR, "应用名称过长");
+            ThrowUtils.throwIf(appName.length() > 80, ErrorCode.PARAMS_ERROR, "应用名称过长");
+        }
+        if(reviewStatus != null){
+            ReviewStatusEnum reviewStatusEnum = ReviewStatusEnum.getEnumByValue(reviewStatus);
+            ThrowUtils.throwIf(ObjectUtils.isEmpty(reviewStatusEnum), ErrorCode.PARAMS_ERROR, "审核状态不能为空");
         }
 
 

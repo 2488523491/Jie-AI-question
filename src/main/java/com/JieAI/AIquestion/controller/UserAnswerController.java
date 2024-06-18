@@ -1,6 +1,9 @@
 package com.JieAI.AIquestion.controller;
 
 import cn.hutool.json.JSONUtil;
+import com.JieAI.AIquestion.model.entity.App;
+import com.JieAI.AIquestion.scoring.ScoringStrategyExecutor;
+import com.JieAI.AIquestion.service.AppService;
 import com.JieAI.AIquestion.service.UserAnswerService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.JieAI.AIquestion.annotation.AuthCheck;
@@ -42,6 +45,12 @@ public class UserAnswerController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private ScoringStrategyExecutor scoringStrategyExecutor;
+
+    @Resource
+    private AppService appService;
+
     // region 增删改查
 
     /**
@@ -52,13 +61,17 @@ public class UserAnswerController {
      * @return
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addUserAnswer(@RequestBody UserAnswerAddRequest userAnswerAddRequest, HttpServletRequest request) {
+    public BaseResponse<Long> addUserAnswer(@RequestBody UserAnswerAddRequest userAnswerAddRequest, HttpServletRequest request) throws Exception {
+        System.out.println(userAnswerAddRequest);
         ThrowUtils.throwIf(userAnswerAddRequest == null, ErrorCode.PARAMS_ERROR);
         //  在此处将实体类和 DTO 进行转换
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerAddRequest, userAnswer);
         List<String> choices = userAnswerAddRequest.getChoices();
         userAnswer.setChoices(JSONUtil.toJsonStr(choices));
+        Long appId = userAnswerAddRequest.getAppId();
+        App oldApp = appService.getById(appId);
+        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
         //  填充默认值
@@ -69,6 +82,11 @@ public class UserAnswerController {
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
+        // 判断是否存在
+            UserAnswer userAnswerResult = scoringStrategyExecutor.doScore(choices, oldApp);
+            userAnswerResult.setId(newUserAnswerId);
+            userAnswerService.updateById(userAnswerResult);
+
         return ResultUtils.success(newUserAnswerId);
     }
 

@@ -1,10 +1,7 @@
 package com.JieAI.AIquestion.controller;
 
 import com.JieAI.AIquestion.annotation.AuthCheck;
-import com.JieAI.AIquestion.common.BaseResponse;
-import com.JieAI.AIquestion.common.DeleteRequest;
-import com.JieAI.AIquestion.common.ErrorCode;
-import com.JieAI.AIquestion.common.ResultUtils;
+import com.JieAI.AIquestion.common.*;
 import com.JieAI.AIquestion.constant.UserConstant;
 import com.JieAI.AIquestion.exception.BusinessException;
 import com.JieAI.AIquestion.exception.ThrowUtils;
@@ -25,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
 
 /**
  * 应用接口
@@ -57,7 +55,6 @@ public class AppController {
         BeanUtils.copyProperties(appAddRequest, app);
         // 数据校验
         appService.validApp(app, true);
-        // todo 填充默认值
         User loginUser = userService.getLoginUser(request);
         app.setUserId(loginUser.getId());
         app.setReviewStatus(ReviewStatusEnum.REVIEWING.getValue());
@@ -236,4 +233,34 @@ public class AppController {
     }
 
     // endregion
+    /**
+     * 应用审核
+     */
+    @PostMapping("/review")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> doAppReview(@RequestBody ReviewRequest reviewRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(reviewRequest == null, ErrorCode.PARAMS_ERROR);
+        Long id = reviewRequest.getId();
+        Integer reviewStatus = reviewRequest.getReviewStatus();
+        ReviewStatusEnum enumByValue = ReviewStatusEnum.getEnumByValue(reviewStatus);
+        if (id == null || enumByValue == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        App oldApp = appService.getById(id);
+        ThrowUtils.throwIf(oldApp == null, ErrorCode.PARAMS_ERROR);
+        if (oldApp.getReviewStatus().equals(reviewStatus)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请勿重复审核");
+        }
+        //更新审核状态
+        User loginUser = userService.getLoginUser(request);
+        App app = new App();
+        app.setId(id);
+        app.setReviewStatus(reviewStatus);
+        app.setReviewMessage(reviewRequest.getReviewMessage());
+        app.setReviewerId(loginUser.getId());
+        app.setReviewTime(new Date());
+        boolean result = appService.updateById(app);
+        ThrowUtils.throwIf(!result, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(true);
+    }
 }

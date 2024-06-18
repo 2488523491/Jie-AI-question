@@ -8,12 +8,11 @@ import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 题目视图
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://www.code-nav.cn">编程导航学习圈</a>
  */
 @Data
 public class QuestionVO implements Serializable {
@@ -26,7 +25,7 @@ public class QuestionVO implements Serializable {
     /**
      * 题目内容（json格式）
      */
-    private QuestionContentDTO questionContent;
+    private List<QuestionContentDTO> questionContent;
 
     /**
      * 应用 id
@@ -63,8 +62,11 @@ public class QuestionVO implements Serializable {
         }
         Question question = new Question();
         BeanUtils.copyProperties(questionVO, question);
-        QuestionContentDTO questionContent = questionVO.getQuestionContent();
-        question.setQuestionContent(JSONUtil.toJsonStr(questionContent));
+        if(questionVO.getQuestionContent() != null){
+            List<QuestionContentDTO> questionContent = questionVO.getQuestionContent();
+            question.setQuestionContent(JSONUtil.toJsonStr(questionContent));
+        }
+
         return question;
     }
 
@@ -81,8 +83,10 @@ public class QuestionVO implements Serializable {
         QuestionVO questionVO = new QuestionVO();
         BeanUtils.copyProperties(question, questionVO);
         String questionContent = question.getQuestionContent();
-        QuestionContentDTO questionContentDTO = JSONUtil.toBean(questionContent, QuestionContentDTO.class);
-        questionVO.setQuestionContent(questionContentDTO);
+        if(questionContent != null ){
+            List<QuestionContentDTO> questionContentDTO = JSONUtil.toList(questionContent, QuestionContentDTO.class);
+            questionVO.setQuestionContent(questionContentDTO);
+        }
         return questionVO;
     }
 }
