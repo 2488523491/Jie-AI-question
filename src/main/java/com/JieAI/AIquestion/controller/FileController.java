@@ -9,7 +9,7 @@ import com.JieAI.AIquestion.exception.BusinessException;
 import com.JieAI.AIquestion.manager.CosManager;
 import com.JieAI.AIquestion.model.dto.file.UploadFileRequest;
 import com.JieAI.AIquestion.model.entity.User;
-import com.JieAI.AIquestion.model.enums.FileUploadBizEnum;
+import com.JieAI.AIquestion.model.entity.enums.FileUploadBizEnum;
 import com.JieAI.AIquestion.service.UserService;
 import java.io.File;
 import java.util.Arrays;

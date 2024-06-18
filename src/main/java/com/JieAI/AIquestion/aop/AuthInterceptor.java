@@ -4,7 +4,7 @@ import com.JieAI.AIquestion.annotation.AuthCheck;
 import com.JieAI.AIquestion.common.ErrorCode;
 import com.JieAI.AIquestion.exception.BusinessException;
 import com.JieAI.AIquestion.model.entity.User;
-import com.JieAI.AIquestion.model.enums.UserRoleEnum;
+import com.JieAI.AIquestion.model.entity.enums.UserRoleEnum;
 import com.JieAI.AIquestion.service.UserService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

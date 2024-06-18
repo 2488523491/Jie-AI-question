@@ -11,7 +11,7 @@ import com.JieAI.AIquestion.constant.CommonConstant;
 import com.JieAI.AIquestion.mapper.UserMapper;
 import com.JieAI.AIquestion.model.dto.user.UserQueryRequest;
 import com.JieAI.AIquestion.model.entity.User;
-import com.JieAI.AIquestion.model.enums.UserRoleEnum;
+import com.JieAI.AIquestion.model.entity.enums.UserRoleEnum;
 import com.JieAI.AIquestion.model.vo.LoginUserVO;
 import com.JieAI.AIquestion.model.vo.UserVO;
 import com.JieAI.AIquestion.utils.SqlUtils;
