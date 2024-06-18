@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.JieAI.AIquestion.model.entity.ScoringResult;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import io.swagger.models.auth.In;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
@@ -53,6 +54,10 @@ public class ScoringResultVO implements Serializable {
      * 应用 id
      */
     private Long appId;
+    /**
+     * 用户Id
+     */
+     Long userId;
 
 
     /**

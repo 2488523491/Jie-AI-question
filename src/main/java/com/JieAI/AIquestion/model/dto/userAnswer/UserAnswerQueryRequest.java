@@ -68,6 +68,10 @@ public class UserAnswerQueryRequest extends PageRequest implements Serializable 
      * 搜索词
      */
     private String searchText;
+    /**
+     * 用户id
+     */
+    private Long userId;
 
 
     private static final long serialVersionUID = 1L;

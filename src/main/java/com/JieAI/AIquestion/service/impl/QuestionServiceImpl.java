@@ -1,22 +1,186 @@
 package com.JieAI.AIquestion.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import com.JieAI.AIquestion.common.ErrorCode;
+import com.JieAI.AIquestion.constant.CommonConstant;
+import com.JieAI.AIquestion.exception.ThrowUtils;
 import com.JieAI.AIquestion.mapper.QuestionMapper;
+import com.JieAI.AIquestion.model.dto.question.QuestionQueryRequest;
+import com.JieAI.AIquestion.model.entity.App;
 import com.JieAI.AIquestion.model.entity.Question;
+import com.JieAI.AIquestion.model.entity.User;
+import com.JieAI.AIquestion.model.vo.QuestionVO;
+import com.JieAI.AIquestion.model.vo.UserVO;
+import com.JieAI.AIquestion.service.AppService;
 import com.JieAI.AIquestion.service.QuestionService;
+import com.JieAI.AIquestion.service.UserService;
+import com.JieAI.AIquestion.utils.SqlUtils;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
-* @author 14316
-* @description 针对表【question(题目)】的数据库操作Service实现
-* @createDate 2024-06-17 19:35:47
-*/
+ * 题目服务实现
+ */
 @Service
-public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question>
-    implements QuestionService {
+@Slf4j
+public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> implements QuestionService {
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private AppService appService;
+
+    /**
+     * 校验数据
+     *
+     * @param question
+     * @param add      对创建的数据进行校验
+     */
+    @Override
+    public void validQuestion(Question question, boolean add) {
+        ThrowUtils.throwIf(question == null, ErrorCode.PARAMS_ERROR);
+        //  从对象中取值
+        Long id = question.getId();
+        String questionContent = question.getQuestionContent();
+        Long appId = question.getAppId();
+        // 创建数据时，参数不能为空
+        if (add) {
+            //  补充校验规则
+            ThrowUtils.throwIf(StringUtils.isBlank(questionContent), ErrorCode.PARAMS_ERROR, "题目内容不能为空");
+            ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "非法appId");
+        }
+        // 修改数据时，有参数则校验
+        //  补充校验规则
+        if (appId != null) {
+            App app = appService.getById(appId);
+            ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR, "应用不存在");
+        }
+    }
+
+    /**
+     * 获取查询条件
+     *
+     * @param questionQueryRequest
+     * @return
+     */
+    @Override
+    public QueryWrapper<Question> getQueryWrapper(QuestionQueryRequest questionQueryRequest) {
+        QueryWrapper<Question> queryWrapper = new QueryWrapper<>();
+        if (questionQueryRequest == null) {
+            return queryWrapper;
+        }
+        // todo 从对象中取值
+        Long id = questionQueryRequest.getId();
+        String questionContent = questionQueryRequest.getQuestionContent();
+        Long appId = questionQueryRequest.getAppId();
+        Long userId = questionQueryRequest.getUserId();
+        String sortField = questionQueryRequest.getSortField();
+        String sortOrder = questionQueryRequest.getSortOrder();
+
+        // todo 补充需要的查询条件
+        // 从多字段中搜索
+        // 模糊查询
+        queryWrapper.like(StringUtils.isNotBlank(questionContent), "questionContent", questionContent);
+        // 精确查询
+        queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(appId), "appId", appId);
+        // 排序规则
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField),
+                sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
+                sortField);
+        return queryWrapper;
+    }
+
+    /**
+     * 获取题目封装
+     *
+     * @param question
+     * @param request
+     * @return
+     */
+    @Override
+    public QuestionVO getQuestionVO(Question question, HttpServletRequest request) {
+        // 对象转封装类
+        QuestionVO questionVO = QuestionVO.objToVo(question);
+
+        // region 可选
+        // 1. 关联查询用户信息
+        Long userId = question.getUserId();
+        User user = null;
+        if (userId != null && userId > 0) {
+            user = userService.getById(userId);
+        }
+        UserVO userVO = userService.getUserVO(user);
+        questionVO.setUser(userVO);
+        // 2. 已登录，获取用户点赞、收藏状态
+        long questionId = question.getId();
+        User loginUser = userService.getLoginUserPermitNull(request);
+        // endregion
+
+        return questionVO;
+    }
+
+    /**
+     * 分页获取题目封装
+     *
+     * @param questionPage
+     * @param request
+     * @return
+     */
+    @Override
+    public Page<QuestionVO> getQuestionVOPage(Page<Question> questionPage, HttpServletRequest request) {
+        List<Question> questionList = questionPage.getRecords();
+        Page<QuestionVO> questionVOPage = new Page<>(questionPage.getCurrent(), questionPage.getSize(), questionPage.getTotal());
+        if (CollUtil.isEmpty(questionList)) {
+            return questionVOPage;
+        }
+        // 对象列表 => 封装对象列表
+        List<QuestionVO> questionVOList = questionList.stream().map(question -> {
+            return QuestionVO.objToVo(question);
+        }).collect(Collectors.toList());
+
+        // region 可选
+        // 1. 关联查询用户信息
+        Set<Long> userIdSet = questionList.stream().map(Question::getUserId).collect(Collectors.toSet());
+        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
+                .collect(Collectors.groupingBy(User::getId));
+        // 2. 已登录，获取用户点赞、收藏状态
+        Map<Long, Boolean> questionIdHasThumbMap = new HashMap<>();
+        Map<Long, Boolean> questionIdHasFavourMap = new HashMap<>();
+        User loginUser = userService.getLoginUserPermitNull(request);
+        if (loginUser != null) {
+            Set<Long> questionIdSet = questionList.stream().map(Question::getId).collect(Collectors.toSet());
+            loginUser = userService.getLoginUser(request);
+
+        }
+        // 填充信息
+        questionVOList.forEach(questionVO -> {
+            Long userId = questionVO.getUserId();
+            User user = null;
+            if (userIdUserListMap.containsKey(userId)) {
+                user = userIdUserListMap.get(userId).get(0);
+            }
+            questionVO.setUser(userService.getUserVO(user));
+        });
+        // endregion
+
+        questionVOPage.setRecords(questionVOList);
+        return questionVOPage;
+    }
 
 }
-
-
-
-
