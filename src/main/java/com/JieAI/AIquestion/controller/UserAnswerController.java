@@ -1,11 +1,6 @@
 package com.JieAI.AIquestion.controller;
 
 import cn.hutool.json.JSONUtil;
-import com.JieAI.AIquestion.model.entity.App;
-import com.JieAI.AIquestion.scoring.ScoringStrategyExecutor;
-import com.JieAI.AIquestion.service.AppService;
-import com.JieAI.AIquestion.service.UserAnswerService;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.JieAI.AIquestion.annotation.AuthCheck;
 import com.JieAI.AIquestion.common.BaseResponse;
 import com.JieAI.AIquestion.common.DeleteRequest;
@@ -18,10 +13,16 @@ import com.JieAI.AIquestion.model.dto.userAnswer.UserAnswerAddRequest;
 import com.JieAI.AIquestion.model.dto.userAnswer.UserAnswerEditRequest;
 import com.JieAI.AIquestion.model.dto.userAnswer.UserAnswerQueryRequest;
 import com.JieAI.AIquestion.model.dto.userAnswer.UserAnswerUpdateRequest;
-import com.JieAI.AIquestion.model.entity.UserAnswer;
+import com.JieAI.AIquestion.model.entity.App;
 import com.JieAI.AIquestion.model.entity.User;
+import com.JieAI.AIquestion.model.entity.UserAnswer;
+import com.JieAI.AIquestion.model.entity.enums.ReviewStatusEnum;
 import com.JieAI.AIquestion.model.vo.UserAnswerVO;
+import com.JieAI.AIquestion.scoring.ScoringStrategyExecutor;
+import com.JieAI.AIquestion.service.AppService;
+import com.JieAI.AIquestion.service.UserAnswerService;
 import com.JieAI.AIquestion.service.UserService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,6 @@ import java.util.List;
 
 /**
  * 用户答案接口
- *
  */
 @RestController
 @RequestMapping("/userAnswer")
@@ -74,6 +74,9 @@ public class UserAnswerController {
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
+        if (!ReviewStatusEnum.PASS.equals(ReviewStatusEnum.getEnumByValue(oldApp.getReviewStatus()))) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"应用未通过审核，无法答题");
+        }
         //  填充默认值
         User loginUser = userService.getLoginUser(request);
         userAnswer.setUserId(loginUser.getId());
@@ -83,9 +86,9 @@ public class UserAnswerController {
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
         // 判断是否存在
-            UserAnswer userAnswerResult = scoringStrategyExecutor.doScore(choices, oldApp);
-            userAnswerResult.setId(newUserAnswerId);
-            userAnswerService.updateById(userAnswerResult);
+        UserAnswer userAnswerResult = scoringStrategyExecutor.doScore(choices, oldApp);
+        userAnswerResult.setId(newUserAnswerId);
+        userAnswerService.updateById(userAnswerResult);
 
         return ResultUtils.success(newUserAnswerId);
     }
@@ -188,7 +191,7 @@ public class UserAnswerController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserAnswerVO>> listUserAnswerVOByPage(@RequestBody UserAnswerQueryRequest userAnswerQueryRequest,
-                                                               HttpServletRequest request) {
+                                                                   HttpServletRequest request) {
         long current = userAnswerQueryRequest.getCurrent();
         long size = userAnswerQueryRequest.getPageSize();
         // 限制爬虫
@@ -209,7 +212,7 @@ public class UserAnswerController {
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<UserAnswerVO>> listMyUserAnswerVOByPage(@RequestBody UserAnswerQueryRequest userAnswerQueryRequest,
-                                                                 HttpServletRequest request) {
+                                                                     HttpServletRequest request) {
         ThrowUtils.throwIf(userAnswerQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
