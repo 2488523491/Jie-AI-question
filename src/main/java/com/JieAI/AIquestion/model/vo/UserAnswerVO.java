@@ -13,8 +13,6 @@ import java.util.List;
 
 /**
  * 用户答案视图
- *
- 
  */
 @Data
 public class UserAnswerVO implements Serializable {
@@ -84,6 +82,10 @@ public class UserAnswerVO implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+    /**
+     * 创建用户信息
+     */
+    private String appName;
 
 
     /**

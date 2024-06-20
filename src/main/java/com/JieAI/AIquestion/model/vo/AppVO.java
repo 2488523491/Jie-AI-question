@@ -1,6 +1,5 @@
 package com.JieAI.AIquestion.model.vo;
 
-import cn.hutool.json.JSONUtil;
 import com.JieAI.AIquestion.model.entity.App;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
@@ -11,11 +10,14 @@ import java.util.List;
 
 /**
  * 应用视图
- *
- 
  */
 @Data
 public class AppVO implements Serializable {
+
+    /**
+     * 应用图标
+     */
+    private String appIcon;
 
     /**
      * 应用名
