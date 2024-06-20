@@ -53,7 +53,7 @@ public class QuestionController {
         //  在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionAddRequest, question);
-    List<QuestionContentDTO> questionContentDTO = questionAddRequest.getQuestionContent();
+        List<QuestionContentDTO> questionContentDTO = questionAddRequest.getQuestionContent();
         question.setQuestionContent(JSONUtil.toJsonStr(questionContentDTO));
         // 数据校验
         questionService.validQuestion(question, true);

@@ -18,6 +18,19 @@ import java.util.List;
 public class AppVO implements Serializable {
 
     /**
+     * 应用名
+     */
+    private String appName;
+    /**
+     * 应用类型（0-得分类，1-测评类）
+     */
+    private Integer appType;
+    /**
+     * 评分策略（0-自定义，1-AI）
+     */
+    private Integer scoringStrategy;
+
+    /**
      * id
      */
     private Long id;
@@ -56,6 +69,10 @@ public class AppVO implements Serializable {
      * 创建用户信息
      */
     private UserVO user;
+    /**
+     * 应用描述
+     */
+    private String appDesc;
 
     /**
      * 封装类转对象

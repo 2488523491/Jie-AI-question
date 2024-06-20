@@ -36,7 +36,8 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAnswer> implements UserAnswerService {
-
+    @Resource
+    private UserAnswerMapper userAnswerMapper;
     @Resource
     private UserService userService;
 
@@ -114,9 +115,7 @@ public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAns
         queryWrapper.eq(ObjectUtils.isNotEmpty(appType), "appType", appType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(scoringStrategy), "scoringStrategy", scoringStrategy);
         // 排序规则
-        queryWrapper.orderBy(SqlUtils.validSortField(sortField),
-                sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         return queryWrapper;
     }
 
@@ -165,22 +164,13 @@ public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAns
             return userAnswerVOPage;
         }
         // 对象列表 => 封装对象列表
-        List<UserAnswerVO> userAnswerVOList = userAnswerList.stream().map(userAnswer -> {
-            return UserAnswerVO.objToVo(userAnswer);
-        }).collect(Collectors.toList());
+        List<UserAnswerVO> userAnswerVOList = userAnswerList.stream().map(UserAnswerVO::objToVo).collect(Collectors.toList());
 
-        //  可以根据需要为封装对象补充值，不需要的内容可以删除
+        // 可以根据需要为封装对象补充值，不需要的内容可以删除
         // region 可选
         // 1. 关联查询用户信息
         Set<Long> userIdSet = userAnswerList.stream().map(UserAnswer::getUserId).collect(Collectors.toSet());
-        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
-                .collect(Collectors.groupingBy(User::getId));
-        // 2. 已登录，获取用户点赞、收藏状态
-        User loginUser = userService.getLoginUserPermitNull(request);
-        if (loginUser != null) {
-            Set<Long> userAnswerIdSet = userAnswerList.stream().map(UserAnswer::getId).collect(Collectors.toSet());
-            loginUser = userService.getLoginUser(request);
-        }
+        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream().collect(Collectors.groupingBy(User::getId));
         // 填充信息
         userAnswerVOList.forEach(userAnswerVO -> {
             Long userId = userAnswerVO.getUserId();
@@ -191,7 +181,6 @@ public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAns
             userAnswerVO.setUser(userService.getUserVO(user));
         });
         // endregion
-
         userAnswerVOPage.setRecords(userAnswerVOList);
         return userAnswerVOPage;
     }

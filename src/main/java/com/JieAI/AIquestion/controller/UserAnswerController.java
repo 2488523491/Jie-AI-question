@@ -75,7 +75,7 @@ public class UserAnswerController {
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
         if (!ReviewStatusEnum.PASS.equals(ReviewStatusEnum.getEnumByValue(oldApp.getReviewStatus()))) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"应用未通过审核，无法答题");
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "应用未通过审核，无法答题");
         }
         //  填充默认值
         User loginUser = userService.getLoginUser(request);
@@ -216,7 +216,7 @@ public class UserAnswerController {
         ThrowUtils.throwIf(userAnswerQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
-        userAnswerQueryRequest.setId(loginUser.getId());
+        userAnswerQueryRequest.setUserId(loginUser.getId());
         long current = userAnswerQueryRequest.getCurrent();
         long size = userAnswerQueryRequest.getPageSize();
         // 限制爬虫
@@ -225,7 +225,8 @@ public class UserAnswerController {
         Page<UserAnswer> userAnswerPage = userAnswerService.page(new Page<>(current, size),
                 userAnswerService.getQueryWrapper(userAnswerQueryRequest));
         // 获取封装类
-        return ResultUtils.success(userAnswerService.getUserAnswerVOPage(userAnswerPage, request));
+        BaseResponse<Page<UserAnswerVO>> success = ResultUtils.success(userAnswerService.getUserAnswerVOPage(userAnswerPage, request));
+        return success;
     }
 
     /**
