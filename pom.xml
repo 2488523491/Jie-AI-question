@@ -48,6 +48,11 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>2.9.2</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
@@ -87,14 +92,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-<<<<<<< HEAD
-=======
             <groupId>cn.bigmodel.openapi</groupId>
             <artifactId>oapi-java-sdk</artifactId>
             <version>release-V4-2.0.2</version>
         </dependency>
         <dependency>
->>>>>>> bc26033 (接入了 AI 大模型)
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <scope>runtime</scope>
@@ -109,6 +111,12 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

@@ -212,7 +212,7 @@ public class AppController {
         if (appEditRequest == null || appEditRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // todo 在此处将实体类和 DTO 进行转换
+        // 在此处将实体类和 DTO 进行转换
         App app = new App();
         BeanUtils.copyProperties(appEditRequest, app);
         // 数据校验
@@ -226,7 +226,7 @@ public class AppController {
         if (!oldApp.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        //设置默认值，重置审核状态
+        // 重置审核状态
         app.setReviewStatus(ReviewStatusEnum.REVIEWING.getValue());
         // 操作数据库
         boolean result = appService.updateById(app);
@@ -235,6 +235,7 @@ public class AppController {
     }
 
     // endregion
+
     /**
      * 应用审核
      */

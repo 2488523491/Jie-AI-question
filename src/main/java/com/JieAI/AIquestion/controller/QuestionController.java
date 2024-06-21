@@ -1,5 +1,6 @@
 package com.JieAI.AIquestion.controller;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.JieAI.AIquestion.annotation.AuthCheck;
 import com.JieAI.AIquestion.common.BaseResponse;
@@ -9,20 +10,30 @@ import com.JieAI.AIquestion.common.ResultUtils;
 import com.JieAI.AIquestion.constant.UserConstant;
 import com.JieAI.AIquestion.exception.BusinessException;
 import com.JieAI.AIquestion.exception.ThrowUtils;
+import com.JieAI.AIquestion.manager.AiManager;
 import com.JieAI.AIquestion.model.dto.question.*;
+import com.JieAI.AIquestion.model.entity.App;
 import com.JieAI.AIquestion.model.entity.Question;
 import com.JieAI.AIquestion.model.entity.User;
+import com.JieAI.AIquestion.model.entity.enums.AppTypeEnum;
 import com.JieAI.AIquestion.model.vo.QuestionVO;
+import com.JieAI.AIquestion.service.AppService;
 import com.JieAI.AIquestion.service.QuestionService;
 import com.JieAI.AIquestion.service.UserService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhipu.oapi.service.v4.model.ModelData;
+import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 题目接口
@@ -32,13 +43,19 @@ import java.util.List;
 @Slf4j
 public class QuestionController {
 
+    private static final String GENERATE_QUESTION_SYSTEM_MESSAGE = "你是一位严谨的出题专家，我会给你如下信息：\n" + "```\n" + "应用名称，\n" + "【【【应用描述】】】，\n" + "应用类别，\n" + "要生成的题目数，\n" + "每个题目的选项数\n" + "```\n" + "\n" + "请你根据上述信息，按照以下步骤来出题：\n" + "1. 要求：题目和选项尽可能地短，题目不要包含序号，每题的选项数以我提供的为主，题目不能重复\n" + "2. 严格按照下面的 json 格式输出题目和选项\n" + "```\n" + "[{\"options\":[{\"value\":\"选项内容\",\"key\":\"A\"},{\"value\":\"\",\"key\":\"B\"}],\"title\":\"题目标题\"}]\n" + "```\n" + "title 是题目，options 是选项，每个选项的 key 按照英文字母序（比如 A、B、C、D）以此类推，value 是选项内容\n" + "3. 检查题目是否包含序号，若包含序号则去除序号\n" + "4. 返回的题目列表格式必须为 JSON 数组";
     @Resource
     private QuestionService questionService;
 
+    // region 增删改查
     @Resource
     private UserService userService;
 
-    // region 增删改查
+    @Resource
+    private AppService appService;
+
+    @Resource
+    private AiManager aiManager;
 
     /**
      * 创建题目
@@ -152,8 +169,7 @@ public class QuestionController {
         long current = questionQueryRequest.getCurrent();
         long size = questionQueryRequest.getPageSize();
         // 查询数据库
-        Page<Question> questionPage = questionService.page(new Page<>(current, size),
-                questionService.getQueryWrapper(questionQueryRequest));
+        Page<Question> questionPage = questionService.page(new Page<>(current, size), questionService.getQueryWrapper(questionQueryRequest));
         return ResultUtils.success(questionPage);
     }
 
@@ -165,15 +181,13 @@ public class QuestionController {
      * @return
      */
     @PostMapping("/list/page/vo")
-    public BaseResponse<Page<QuestionVO>> listQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest,
-                                                               HttpServletRequest request) {
+    public BaseResponse<Page<QuestionVO>> listQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest, HttpServletRequest request) {
         long current = questionQueryRequest.getCurrent();
         long size = questionQueryRequest.getPageSize();
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         // 查询数据库
-        Page<Question> questionPage = questionService.page(new Page<>(current, size),
-                questionService.getQueryWrapper(questionQueryRequest));
+        Page<Question> questionPage = questionService.page(new Page<>(current, size), questionService.getQueryWrapper(questionQueryRequest));
         // 获取封装类
         return ResultUtils.success(questionService.getQuestionVOPage(questionPage, request));
     }
@@ -186,8 +200,7 @@ public class QuestionController {
      * @return
      */
     @PostMapping("/my/list/page/vo")
-    public BaseResponse<Page<QuestionVO>> listMyQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest,
-                                                                 HttpServletRequest request) {
+    public BaseResponse<Page<QuestionVO>> listMyQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(questionQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
@@ -197,11 +210,12 @@ public class QuestionController {
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         // 查询数据库
-        Page<Question> questionPage = questionService.page(new Page<>(current, size),
-                questionService.getQueryWrapper(questionQueryRequest));
+        Page<Question> questionPage = questionService.page(new Page<>(current, size), questionService.getQueryWrapper(questionQueryRequest));
         // 获取封装类
         return ResultUtils.success(questionService.getQuestionVOPage(questionPage, request));
     }
+
+    // endregion
 
     /**
      * 编辑题目（给用户使用）
@@ -237,5 +251,101 @@ public class QuestionController {
         return ResultUtils.success(true);
     }
 
-    // endregion
+    @PostMapping("/ai_generate")
+    public BaseResponse<List<QuestionContentDTO>> aiGenerateQuestion(@RequestBody AiGenerateQuestionRequest aiGenerateQuestionRequest) {
+        ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
+        // 获取参数
+        Long appId = aiGenerateQuestionRequest.getAppId();
+        int questionNumber = aiGenerateQuestionRequest.getQuestionNumber();
+        int optionNumber = aiGenerateQuestionRequest.getOptionNumber();
+        // 获取应用信息
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        // 封装 Prompt
+        String userMessage = getGenerateQuestionUserMessage(app, questionNumber, optionNumber);
+        // AI 生成
+        System.out.println(userMessage);
+        String result = aiManager.doSyncRequest(GENERATE_QUESTION_SYSTEM_MESSAGE, userMessage, null);
+        System.out.println(result);
+        // 截取需要的 JSON 信息
+        int start = result.indexOf("[");
+        int end = result.lastIndexOf("]");
+        String json = result.substring(start, end + 1);
+        List<QuestionContentDTO> questionContentDTOList = JSONUtil.toList(json, QuestionContentDTO.class);
+        System.out.println(questionContentDTOList.toString());
+        return ResultUtils.success(questionContentDTOList);
+    }
+
+    @GetMapping("/ai_generate/sse")
+    public SseEmitter aiGenerateQuestionSSE(AiGenerateQuestionRequest aiGenerateQuestionRequest) {
+        ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
+        // 获取参数
+        Long appId = aiGenerateQuestionRequest.getAppId();
+        int questionNumber = aiGenerateQuestionRequest.getQuestionNumber();
+        int optionNumber = aiGenerateQuestionRequest.getOptionNumber();
+        // 获取应用信息
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        // 封装 Prompt
+        String userMessage = getGenerateQuestionUserMessage(app, questionNumber, optionNumber);
+        // AI 生成
+        Flowable<ModelData> modelDataFlowable = aiManager.doStreamRequest(GENERATE_QUESTION_SYSTEM_MESSAGE, userMessage, true, null);
+        //建立SSE 连接对象， 0表示永不超时
+        SseEmitter sseEmitter = new SseEmitter();
+        //左括号计数 除了默认值外 当回归为 0 的时候 表示可以截取
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+        StringBuilder stringBuilder = new StringBuilder();
+        modelDataFlowable
+                .observeOn(Schedulers.io())
+                .map(modelData -> modelData.getChoices().get(0).getDelta().getContent())
+                .map(message -> message.replaceAll("\\s", ""))
+                .filter(StrUtil::isNotBlank)
+                //分流
+                .flatMap(message -> {
+                    List<Character> characterList = new ArrayList<>();
+                    for (char c : message.toCharArray()) {
+                        characterList.add(c);
+                    }
+                    return Flowable.fromIterable(characterList);
+                })
+                .doOnNext(c -> {
+                    if (c == '{') {
+                        atomicInteger.addAndGet(1);
+                    }
+                    if (atomicInteger.get() > 0) {
+                        stringBuilder.append(c);
+                    }
+                    if (c == '}') {
+                        atomicInteger.addAndGet(-1);
+                        if (atomicInteger.get() == 0) {
+                            sseEmitter.send(JSONUtil.toJsonStr(stringBuilder.toString()));
+                            //重置
+                            stringBuilder.setLength(0);
+                        }
+                    }
+                })
+                .doOnError((e) -> log.error("sse error", e))
+                .doOnComplete(sseEmitter::complete)
+                .subscribe();
+        return sseEmitter;
+    }
+
+
+    /**
+     * 生成题目的用户消息
+     *
+     * @param app
+     * @param questionNumber
+     * @param optionNumber
+     * @return
+     */
+    private String getGenerateQuestionUserMessage(App app, int questionNumber, int optionNumber) {
+        StringBuilder userMessage = new StringBuilder();
+        userMessage.append(app.getAppName()).append("\n");
+        userMessage.append(app.getAppDesc()).append("\n");
+        userMessage.append(AppTypeEnum.getEnumByValue(app.getAppType()).getText()).append("\n");
+        userMessage.append(questionNumber).append("\n");
+        userMessage.append(optionNumber);
+        return userMessage.toString();
+    }
 }

@@ -24,12 +24,11 @@ spring:
     password: lgj
   # Redis 配置
   # todo 需替换配置，然后取消注释
-  #  redis:
-  #    database: 1
-  #    host: localhost
-  #    port: 6379
-  #    timeout: 5000
-  #    password: 123456
+  redis:
+      database: 6
+      host: 192.168.88.130
+      port: 6379
+      timeout: 5000
   # 文件上传
   servlet:
     multipart:
@@ -55,6 +54,12 @@ mybatis-plus:
       logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
 # 对象存储
 # todo 需替换配置
+cos:
+  client:
+    accessKey: xxxx
+    secretKey: xxxx
+    region: xxxx
+    bucket: xxxx
 # 接口文档配置
 knife4j:
   enable: true
@@ -67,4 +72,5 @@ knife4j:
         api-rule-resources:
           - com.JieAI.AIquestion.controller
 #AI配置
-
+ai:
+  aiKey: xxxx
