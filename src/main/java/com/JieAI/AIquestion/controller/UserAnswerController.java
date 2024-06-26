@@ -86,9 +86,15 @@ public class UserAnswerController {
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
         // 判断是否存在
-        UserAnswer userAnswerResult = scoringStrategyExecutor.doScore(choices, oldApp);
-        userAnswerResult.setId(newUserAnswerId);
-        userAnswerService.updateById(userAnswerResult);
+        try {
+            UserAnswer userAnswerResult = scoringStrategyExecutor.doScore(choices, oldApp);
+            userAnswerResult.setId(newUserAnswerId);
+            userAnswerResult.setAppId(null);
+            userAnswerService.updateById(userAnswerResult);
+        }catch (Exception e) {
+            e.printStackTrace();
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "评分错误");
+        }
 
         return ResultUtils.success(newUserAnswerId);
     }

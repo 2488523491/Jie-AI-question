@@ -123,7 +123,7 @@ public class AiTestScoringStrategy implements ScoringStrategy {
         }finally {
             if(lock != null && lock.isLocked()){
                 if(lock.isHeldByCurrentThread()){
-
+                    lock.unlock();
                 }
             }
         }
