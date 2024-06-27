@@ -58,10 +58,12 @@ public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAns
         //  从对象中取值
         Long appId = userAnswer.getAppId();
         System.out.println(appId);
+        Long id = userAnswer.getId();
         // 创建数据时，参数不能为空
         if (add) {
             //  补充校验规则
             ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "非法应用Id");
+            ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR, "非法Id");
         }
         if (appId != null) {
             App app = appService.getById(appId);
