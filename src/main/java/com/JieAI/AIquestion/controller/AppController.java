@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * 应用接口
@@ -136,20 +137,24 @@ public class AppController {
     }
 
     /**
-     * 分页获取应用列表（仅管理员可用）
+     * 分页获取应用列表
      *
      * @param appQueryRequest
      * @return
      */
     @PostMapping("/list/page")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<App>> listAppByPage(@RequestBody AppQueryRequest appQueryRequest) {
+    public BaseResponse<Page<AppVO>> listAppByPage(@RequestBody AppQueryRequest appQueryRequest, HttpServletRequest request) {
         long current = appQueryRequest.getCurrent();
         long size = appQueryRequest.getPageSize();
-        // 查询数据库
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        if (Objects.equals(loginUser.getUserRole(), UserConstant.DEFAULT_ROLE)) {
+            appQueryRequest.setUserId(loginUser.getId());
+            appQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
+        }
         Page<App> appPage = appService.page(new Page<>(current, size),
                 appService.getQueryWrapper(appQueryRequest));
-        return ResultUtils.success(appPage);
+        return ResultUtils.success(appService.getAppVOPage(appPage, request));
     }
 
     /**
@@ -159,21 +164,21 @@ public class AppController {
      * @param request
      * @return
      */
-    @PostMapping("/list/page/vo")
-    public BaseResponse<Page<AppVO>> listAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
-                                                     HttpServletRequest request) {
-        long current = appQueryRequest.getCurrent();
-        long size = appQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        //只能看到过审的应用
-        appQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
-        // 查询数据库
-        Page<App> appPage = appService.page(new Page<>(current, size),
-                appService.getQueryWrapper(appQueryRequest));
-        // 获取封装类
-        return ResultUtils.success(appService.getAppVOPage(appPage, request));
-    }
+//    @PostMapping("/list/page/vo")
+//    public BaseResponse<Page<AppVO>> listAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
+//                                                     HttpServletRequest request) {
+//        long current = appQueryRequest.getCurrent();
+//        long size = appQueryRequest.getPageSize();
+//        // 限制爬虫
+//        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+//        //只能看到过审的应用
+//        appQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
+//        // 查询数据库
+//        Page<App> appPage = appService.page(new Page<>(current, size),
+//                appService.getQueryWrapper(appQueryRequest));
+//        // 获取封装类
+//        return ResultUtils.success(appService.getAppVOPage(appPage, request));
+//    }
 
     /**
      * 分页获取当前登录用户创建的应用列表
@@ -182,23 +187,23 @@ public class AppController {
      * @param request
      * @return
      */
-    @PostMapping("/my/list/page/vo")
-    public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
-                                                       HttpServletRequest request) {
-        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 补充查询条件，只查询当前登录用户的数据
-        User loginUser = userService.getLoginUser(request);
-        appQueryRequest.setUserId(loginUser.getId());
-        long current = appQueryRequest.getCurrent();
-        long size = appQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        // 查询数据库
-        Page<App> appPage = appService.page(new Page<>(current, size),
-                appService.getQueryWrapper(appQueryRequest));
-        // 获取封装类
-        return ResultUtils.success(appService.getAppVOPage(appPage, request));
-    }
+//    @PostMapping("/my/list/page/vo")
+//    public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
+//                                                       HttpServletRequest request) {
+//        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
+//        // 补充查询条件，只查询当前登录用户的数据
+//        User loginUser = userService.getLoginUser(request);
+//        appQueryRequest.setUserId(loginUser.getId());
+//        long current = appQueryRequest.getCurrent();
+//        long size = appQueryRequest.getPageSize();
+//        // 限制爬虫
+//        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+//        // 查询数据库
+//        Page<App> appPage = appService.page(new Page<>(current, size),
+//                appService.getQueryWrapper(appQueryRequest));
+//        // 获取封装类
+//        return ResultUtils.success(appService.getAppVOPage(appPage, request));
+//    }
 
     /**
      * 编辑应用（给用户使用）

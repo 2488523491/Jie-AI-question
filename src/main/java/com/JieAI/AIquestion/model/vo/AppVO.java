@@ -6,23 +6,28 @@ import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
 
 /**
  * 应用视图
  */
 @Data
 public class AppVO implements Serializable {
-
     /**
-     * 应用图标
+     * id
      */
-    private String appIcon;
-
+    private Long id;
     /**
      * 应用名
      */
     private String appName;
+    /**
+     * 应用描述
+     */
+    private String appDesc;
+    /**
+     * 应用图标
+     */
+    private String appIcon;
     /**
      * 应用类型（0-得分类，1-测评类）
      */
@@ -31,50 +36,35 @@ public class AppVO implements Serializable {
      * 评分策略（0-自定义，1-AI）
      */
     private Integer scoringStrategy;
-
     /**
-     * id
+     * 审核状态：0-待审核, 1-通过, 2-拒绝
      */
-    private Long id;
-
+    private Integer reviewStatus;
     /**
-     * 标题
+     * 审核信息
      */
-    private String title;
-
+    private String reviewMessage;
     /**
-     * 内容
+     * 审核人 id
      */
-    private String content;
-
+    private Long reviewerId;
+    /**
+     * 审核时间
+     */
+    private Date reviewTime;
     /**
      * 创建用户 id
      */
     private Long userId;
-
+    private UserVO user;
     /**
      * 创建时间
      */
     private Date createTime;
-
     /**
      * 更新时间
      */
     private Date updateTime;
-
-    /**
-     * 标签列表
-     */
-    private List<String> tagList;
-
-    /**
-     * 创建用户信息
-     */
-    private UserVO user;
-    /**
-     * 应用描述
-     */
-    private String appDesc;
 
     /**
      * 封装类转对象

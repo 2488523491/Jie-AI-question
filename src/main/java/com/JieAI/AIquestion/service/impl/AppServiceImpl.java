@@ -18,7 +18,6 @@ import com.JieAI.AIquestion.service.UserService;
 import com.JieAI.AIquestion.utils.SqlUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -75,7 +74,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (StringUtils.isNotBlank(appName)) {
             ThrowUtils.throwIf(appName.length() > 80, ErrorCode.PARAMS_ERROR, "应用名称过长");
         }
-        if(reviewStatus != null){
+        if (reviewStatus != null) {
             ReviewStatusEnum reviewStatusEnum = ReviewStatusEnum.getEnumByValue(reviewStatus);
             ThrowUtils.throwIf(ObjectUtils.isEmpty(reviewStatusEnum), ErrorCode.PARAMS_ERROR, "审核状态不能为空");
         }
@@ -121,13 +120,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
         queryWrapper.eq(ObjectUtils.isNotEmpty(appType), "appType", appType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(scoringStrategy), "scoringStrategy", scoringStrategy);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(reviewStatus), "reviewStatus", reviewStatus);
         queryWrapper.eq(ObjectUtils.isNotEmpty(reviewerId), "reviewerId", reviewerId);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
+        queryWrapper.and(ObjectUtils.isNotEmpty(reviewStatus) && ObjectUtils.isNotEmpty(userId), (qw) -> qw.eq("reviewStatus", reviewStatus).or().eq("userId", userId));
         // 排序规则
-        queryWrapper.orderBy(SqlUtils.validSortField(sortField),
-                sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         return queryWrapper;
     }
 
@@ -172,16 +168,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             return appVOPage;
         }
         // 对象列表 => 封装对象列表
-        List<AppVO> appVOList = appList.stream().map(app -> {
-            return AppVO.objToVo(app);
-        }).collect(Collectors.toList());
+        List<AppVO> appVOList = appList.stream().map(AppVO::objToVo).collect(Collectors.toList());
 
         // todo 可以根据需要为封装对象补充值，不需要的内容可以删除
         // region 可选
         // 1. 关联查询用户信息
         Set<Long> userIdSet = appList.stream().map(App::getUserId).collect(Collectors.toSet());
-        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
-                .collect(Collectors.groupingBy(User::getId));
+        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream().collect(Collectors.groupingBy(User::getId));
 
         // 填充信息
         appVOList.forEach(appVO -> {
